@@ -5,50 +5,58 @@ import fetch from "node-fetch";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+/* ================== MIDDLEWARE ================== */
+app.use(cors({
+  origin: "*", // يسمح لأي Frontend
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
+
 app.use(express.json());
 
-// الصفحة الرئيسية (سيبها زي ما هي)
+/* ================== TEST ROUTE ================== */
 app.get("/", (req, res) => {
   res.json({ status: "AZ Backend is running 🚀" });
 });
 
-// توليد OTP 6 أرقام
+/* ================== OTP LOGIC ================== */
+
+// توليد OTP من 6 أرقام
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// تخزين مؤقت للـ OTP
+// تخزين OTP مؤقت
 const otpStore = new Map();
 
-// إرسال OTP بالإيميل عبر Brevo
+/* ================== SEND EMAIL VIA BREVO ================== */
 async function sendOTPEmail(email, otp) {
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
       "accept": "application/json",
       "api-key": process.env.BREVO_API_KEY,
-      "content-type": "application/json",
+      "content-type": "application/json"
     },
     body: JSON.stringify({
-      sender: { name: "AZ", email: "mohammedeamdabozeed@gmail.com" },
-      to: [{ email }],
+      sender: { name: "AZ", email: "no-reply@az.com" },
+      to: [{ email }], // ✅ الإيميل اللي المستخدم دخله
       subject: "AZ Verification Code",
-      htmlContent: `<h2>Your OTP code is: ${otp}</h2><p>Valid for 5 minutes</p>`,
-    }),
+      htmlContent: `
+        <h2>Your OTP code is: ${otp}</h2>
+        <p>Valid for 5 minutes</p>
+      `
+    })
   });
 
-  const text = await response.text();
-
-if (response.status >= 500) {
-  console.error("Brevo error:", text);
-  throw new Error("Failed to send email");
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("Brevo error:", text);
+    throw new Error("Failed to send email");
+  }
 }
 
-console.log("Brevo success:", text);
-}
-
-// Register + Send OTP
+/* ================== REGISTER ROUTE ================== */
 app.post("/auth/register", async (req, res) => {
   try {
     const { email } = req.body;
@@ -58,22 +66,47 @@ app.post("/auth/register", async (req, res) => {
     }
 
     const otp = generateOTP();
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 دقائق
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 دقايق
 
     otpStore.set(email, { otp, expiresAt });
 
     await sendOTPEmail(email, otp);
 
+    // ❌ ممنوع ترجع OTP للـ frontend
     res.json({
-  message: "OTP sent to email",
-  otp: otp // مؤقت للتجربة فقط
-});
+      message: "OTP sent to email"
+    });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error sending OTP" });
   }
 });
 
+/* ================== VERIFY OTP ROUTE ================== */
+app.post("/auth/verify-otp", (req, res) => {
+  const { email, otp } = req.body;
+
+  const data = otpStore.get(email);
+
+  if (!data) {
+    return res.status(400).json({ message: "OTP not found" });
+  }
+
+  if (Date.now() > data.expiresAt) {
+    otpStore.delete(email);
+    return res.status(400).json({ message: "OTP expired" });
+  }
+
+  if (data.otp !== otp) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  otpStore.delete(email);
+  res.json({ message: "Email verified successfully ✅" });
+});
+
+/* ================== START SERVER ================== */
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
