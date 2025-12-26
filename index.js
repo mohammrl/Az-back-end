@@ -38,9 +38,14 @@ async function sendOTPEmail(email, otp) {
     }),
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to send email");
-  }
+  const result = await response.json();
+
+if (response.status >= 400) {
+  console.error("Brevo error:", result);
+  throw new Error("Failed to send email");
+}
+
+console.log("Brevo success:", result);
 }
 
 // Register + Send OTP
