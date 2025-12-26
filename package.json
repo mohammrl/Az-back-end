@@ -1,5 +1,5 @@
 {
-  "name": "az-backend",
+  "name": "az-back-end",
   "type": "module",
   "scripts": {
     "start": "node index.js"
