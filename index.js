@@ -64,7 +64,10 @@ app.post("/auth/register", async (req, res) => {
 
     await sendOTPEmail(email, otp);
 
-    res.json({ message: "OTP sent to email" });
+    res.json({
+  message: "OTP sent to email",
+  otp: otp // مؤقت للتجربة فقط
+});
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error sending OTP" });
