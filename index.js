@@ -31,7 +31,7 @@ async function sendOTPEmail(email, otp) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      sender: { name: "AZ", email: "no-reply@az.com" },
+      sender: { name: "AZ", email: "mohammedeamdabozeed@gmail.com" },
       to: [{ email }],
       subject: "AZ Verification Code",
       htmlContent: `<h2>Your OTP code is: ${otp}</h2><p>Valid for 5 minutes</p>`,
