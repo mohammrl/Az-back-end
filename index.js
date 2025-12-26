@@ -40,7 +40,7 @@ async function sendOTPEmail(email, otp) {
 
   const text = await response.text();
 
-if (response.status >= 400) {
+if (response.status >= 500) {
   console.error("Brevo error:", text);
   throw new Error("Failed to send email");
 }
