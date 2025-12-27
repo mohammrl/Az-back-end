@@ -39,7 +39,7 @@ async function sendOTPEmail(email, otp) {
       "content-type": "application/json"
     },
     body: JSON.stringify({
-      sender: { name: "AZ", email: "no-reply@az.com" },
+      sender: { name: "AZ", email: "mohammedeamdabozeed@gmail.com" },
       to: [{ email }], // ✅ الإيميل اللي المستخدم دخله
       subject: "AZ Verification Code",
       htmlContent: `
