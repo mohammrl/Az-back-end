@@ -4,63 +4,52 @@ import nodemailer from "nodemailer";
 
 const app = express();
 
-/* ================== MIDDLEWARE ================== */
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"]
-}));
-
+/* ===== middleware ===== */
+app.use(cors());
 app.use(express.json());
 
-/* ================== HEALTH CHECK ================== */
+/* ===== HEALTH CHECK ===== */
 app.get("/", (req, res) => {
   res.status(200).send("OK");
 });
 
-/* ================== EMAIL SENDER ================== */
+/* ===== email sender ===== */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-/* ================== SEND OTP ================== */
+/* ===== send otp ===== */
 app.post("/send-otp", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email required" });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000);
+
   try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000);
-
     await transporter.sendMail({
       from: `"AZ App" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Your OTP Code",
-      text: `Your OTP is: ${otp}`,
-      html: `<h2>Your OTP is: ${otp}</h2>`
+      text: `Your OTP is ${otp}`,
+      html: `<h2>Your OTP is <b>${otp}</b></h2>`,
     });
 
-    return res.status(200).json({
-      message: "OTP sent successfully"
-    });
-
-  } catch (error) {
-    console.error("Send OTP Error:", error);
-    return res.status(500).json({
-      message: "Error sending OTP"
-    });
+    res.json({ message: "OTP sent", otp }); // otp تشيله في production
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to send email" });
   }
 });
 
-/* ================== SERVER ================== */
+/* ===== start server ===== */
 const PORT = process.env.PORT || 8080;
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
